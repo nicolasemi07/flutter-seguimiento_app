@@ -25,7 +25,9 @@ class SearchBar extends StatelessWidget {
       width: width,
       child: GestureDetector(
         onTap: () async {
-          final resultado = await showSearch(context: context, delegate: SearchDestination());
+          final proximidad = BlocProvider.of<MiUbicacionBloc>(context).state.ubicacion;
+          final historial = BlocProvider.of<BusquedaBloc>(context).state.historial;
+          final resultado = await showSearch(context: context, delegate: SearchDestination(proximidad, historial));
           this.retornoBusqueda(context, resultado);
         },
         child: Container(
@@ -42,12 +44,38 @@ class SearchBar extends StatelessWidget {
     );
   }
 
-  void retornoBusqueda(BuildContext context, SearchResult result) {
+  Future<void> retornoBusqueda(BuildContext context, SearchResult result) async {
     if (result.cancelo) return;
     if (result.manual) {
       BlocProvider.of<BusquedaBloc>(context).add(OnActivarMarcadorManual());
       return;
     }
+
+    calculandoAlerta(context);
+
+    // Cálculo de ruta en base al resultado
+    final trafficService = new TrafficService();
+    final mapaBloc = BlocProvider.of<MapaBloc>(context);
+
+    final inicio = BlocProvider.of<MiUbicacionBloc>(context).state.ubicacion;
+    final destino = result.position;
+
+    final drivingResponse = await trafficService.getCoordsInicioYDestino(inicio, destino);
+
+    final geometry = drivingResponse.routes[0].geometry;
+    final duracion = drivingResponse.routes[0].duration;
+    final distancia = drivingResponse.routes[0].distance;
+
+    final points = Poly.Polyline.Decode(encodedString: geometry, precision: 6);
+    final List<LatLng> rutaCoordenadas = points.decodedCoords.map((point) => LatLng(point[0], point[1])).toList();
+
+    mapaBloc.add(OnCrearRutaInicioDestino(rutaCoordenadas, distancia, duracion));
+
+    Navigator.of(context).pop();
+
+    // Agregar al historial el resultado
+    final busquedaBloc = BlocProvider.of<BusquedaBloc>(context);
+    busquedaBloc.add(OnAgregarHistorial(result));
   }
 
 }
