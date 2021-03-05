@@ -78,6 +78,7 @@ class _MapaPageState extends State<MapaPage> {
           // onMapCreated: (GoogleMapController controller) => mapaBloc.initMapa(controller),
           onMapCreated: mapaBloc.initMapa, // Es lo mismo que la linea de arriba, porque recibe sólo 1 argumento
           polylines: mapaBloc.state.polylines.values.toSet(),
+          markers: mapaBloc.state.markers.values.toSet(),
           onCameraMove: (cameraPosition) {
             mapaBloc.add(OnMovioMapa(cameraPosition.target));
           }

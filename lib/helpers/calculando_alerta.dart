@@ -1,7 +1,7 @@
 part of 'helpers.dart';
 
 void calculandoAlerta(BuildContext context) {
-  if (!Platform.isAndroid) {
+  if (Platform.isAndroid) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
